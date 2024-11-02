@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ theme.title if theme else "Theme Bingo" }}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/base-board.css') }}" rel="stylesheet">
+    {% if theme %}
+    <link href="{{ url_for('static', filename='themes/' + theme_id + '.css') }}" rel="stylesheet">
+    {% endif %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.0/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    {% if not theme %}
+    <!-- Theme Selection Page -->
+    <div class="min-h-screen bg-gray-900 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-white mb-8">Choose Your Bingo Theme</h1>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for theme in themes %}
+                    <a href="{{ url_for('theme_page', theme_id=theme.id) }}" 
+                       class="block p-6 bg-gray-800 rounded-lg shadow-lg hover:transform hover:scale-105 transition-all">
+                        <h2 class="text-2xl font-bold text-white mb-2">{{ theme.title }}</h2>
+                        <p class="text-gray-300">{{ theme.description }}</p>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Bingo Board Page -->
+    <div class="min-h-screen theme-background">
+        <div id="special-effects-container" class="fixed inset-0 pointer-events-none"></div>
+
+        <!-- Mobile Menu Button -->
+        <button id="menuButton" class="mobile-menu-button clay no-print">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="mobile-menu clay no-print">
+            <button onclick="generateBoard()" class="action-button clay">
+                <i class="fas fa-dice"></i>
+                New Board
+            </button>
+            <button onclick="downloadPDF()" class="action-button clay">
+                <i class="fas fa-download"></i>
+                Download PDF
+            </button>
+            <a href="{{ url_for('index') }}" class="action-button clay">
+                <i class="fas fa-home"></i>
+                Change Theme
+            </a>
+        </div>
+
+        <div class="responsive-container relative z-10">
+            <!-- Header -->
+            <div class="header-container">
+                <h1 class="header-title theme-text font-bold mb-2">
+                    {{ theme.title }}
+                </h1>
+                <p class="header-description theme-text-secondary frost py-2 px-4 rounded-full inline-block">
+                    {{ theme.description }}
+                </p>
+            </div>
+            
+            <!-- Desktop Controls -->
+            <div class="controls-container no-print">
+                <button onclick="generateBoard()" class="action-button clay">
+                    <i class="fas fa-dice"></i>
+                    New Board
+                </button>
+                <button onclick="downloadPDF()" class="action-button clay">
+                    <i class="fas fa-download"></i>
+                    Download PDF
+                </button>
+                <a href="{{ url_for('index') }}" class="action-button clay">
+                    <i class="fas fa-home"></i>
+                    Change Theme
+                </a>
+            </div>
+
+            <!-- Game board -->
+            <div class="board-container frost">
+                <div id="board" class="bingo-grid">
+                    <!-- Board will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Initialize theme data -->
+    <script>
+        window.THEME_ID = {% if theme_id %}"{{ theme_id }}"{% else %}null{% endif %};
+        window.THEME_DATA = {% if theme %}{{ theme | tojson | safe }}{% else %}null{% endif %};
+
+        // Mobile menu functionality
+        const menuButton = document.getElementById('menuButton');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        if (menuButton && mobileMenu) {
+            menuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('active');
+            });
+
+            // Close menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!mobileMenu.contains(e.target) && !menuButton.contains(e.target)) {
+                    mobileMenu.classList.remove('active');
+                }
+            });
+        }
+    </script>
+    
+    <!-- Load application scripts -->
+    <script src="{{ url_for('static', filename='js/logger.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/effects.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/board.js') }}"></script>
+    {% if debug %}
+    <script>window.IS_DEVELOPMENT = true;</script>
+    {% else %}
+    <script>window.IS_DEVELOPMENT = false;</script>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,283 @@
+/* static/themes/christmas.css */
+@import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;600&display=swap');
+
+:root {
+    /* Cozy Sweater Colors */
+    --cream: #f8f4e9;
+    --pine: #146b3a;
+    --holly: #ea4630;
+    --dark-pine: #0f4d2a;
+    --snow-white: #ffffff;
+    
+    /* Pattern Colors for Background */
+    --pattern-light: rgba(255, 255, 255, 0.05);
+    --pattern-dark: rgba(0, 0, 0, 0.1);
+}
+
+/* Knitted Pattern Background */
+.theme-background {
+    background-color: var(--pine);
+    background-image: 
+        /* Diagonal pattern */
+        repeating-linear-gradient(
+            -45deg,
+            var(--pattern-light) 0px,
+            var(--pattern-light) 2px,
+            transparent 2px,
+            transparent 8px
+        ),
+        /* Diamond pattern */
+        radial-gradient(
+            circle at 0 0,
+            var(--pattern-dark) 2px,
+            transparent 2px
+        ),
+        radial-gradient(
+            circle at 8px 8px,
+            var(--pattern-dark) 2px,
+            transparent 2px
+        );
+    background-size: 16px 16px, 16px 16px, 16px 16px;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+    padding: 2rem 1rem;
+}
+
+/* Cozy Typography */
+.header-title {
+    font-family: 'Mountains of Christmas', cursive;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    color: var(--cream);
+    text-align: center;
+    margin-bottom: 0.5rem;
+    line-height: 1.1;
+    text-shadow: 2px 2px 0 var(--dark-pine);
+}
+
+.header-description {
+    font-family: 'Nunito', sans-serif;
+    color: var(--cream);
+    text-align: center;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+/* Sweater-Style Board Container */
+.board-container {
+    background: var(--cream);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Knitted Pattern Border for Board */
+.board-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 16px solid transparent;
+    border-image: repeating-linear-gradient(
+        45deg,
+        var(--holly) 0,
+        var(--holly) 10px,
+        var(--pine) 10px,
+        var(--pine) 20px
+    ) 16;
+    pointer-events: none;
+}
+
+/* Cozy Cell Styling */
+.bingo-cell.clay {
+    background: var(--snow-white);
+    border: 2px solid var(--cream);
+    border-radius: 16px;
+    padding: 1rem;
+    position: relative;
+    transition: all 0.2s ease;
+    min-height: 80px;
+    
+    /* Knitted texture overlay */
+    background-image: 
+        repeating-linear-gradient(
+            -45deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(0, 0, 0, 0.03) 3px,
+            rgba(0, 0, 0, 0.03) 4px
+        );
+}
+
+.bingo-cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 
+        0 4px 12px rgba(20, 107, 58, 0.1),
+        0 0 0 2px var(--pine);
+}
+
+.bingo-cell .bingo-text {
+    font-family: 'Nunito', sans-serif;
+    font-size: clamp(0.875rem, 1.5vw, 1rem);
+    font-weight: 600;
+    color: var(--pine);
+    text-align: center;
+    line-height: 1.3;
+}
+
+/* Festive Marked State */
+.bingo-cell.marked {
+    background-color: var(--holly) !important;
+    transform: scale(0.98);
+    background-image: 
+        repeating-linear-gradient(
+            45deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(0, 0, 0, 0.1) 3px,
+            rgba(0, 0, 0, 0.1) 4px
+        );
+}
+
+.bingo-cell.marked .bingo-text {
+    color: var(--snow-white);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.2);
+}
+
+/* Holiday Sweater Buttons */
+.action-button {
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    background: var(--cream);
+    color: var(--pine);
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 2px solid var(--pine);
+    /* Knitted texture */
+    background-image: 
+        repeating-linear-gradient(
+            -45deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(0, 0, 0, 0.03) 3px,
+            rgba(0, 0, 0, 0.03) 4px
+        );
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    background-color: var(--snow-white);
+}
+
+/* Snowflakes with Sweater Colors */
+.snowflake {
+    position: fixed;
+    top: -10px;
+    color: var(--cream);
+    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+    z-index: 1;
+    pointer-events: none;
+    animation: fall 10s linear forwards;
+    opacity: 0.8;
+}
+
+/* Free Space Decoration */
+.bingo-cell[data-free-space="true"] {
+    background-color: var(--pine);
+    background-image: 
+        repeating-linear-gradient(
+            45deg,
+            transparent 0px,
+            transparent 3px,
+            rgba(255, 255, 255, 0.1) 3px,
+            rgba(255, 255, 255, 0.1) 4px
+        );
+}
+
+.bingo-cell[data-free-space="true"] .bingo-text {
+    color: var(--cream);
+}
+
+.bingo-cell[data-free-space="true"]::before {
+    content: "🎄";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 1.5em;
+    animation: twinkle 2s infinite;
+}
+
+/* Animation Keyframes */
+@keyframes fall {
+    to {
+        transform: translateY(100vh) rotate(360deg);
+    }
+}
+
+@keyframes twinkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Winning Animation */
+.winning-cell {
+    animation: cozyWin 0.6s ease-in-out;
+}
+
+@keyframes cozyWin {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05) rotate(2deg); }
+    100% { transform: scale(1); }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .snowflake, 
+    .bingo-cell[data-free-space="true"]::before {
+        animation: none;
+    }
+    
+    .bingo-cell:hover {
+        transform: none;
+    }
+    
+    .action-button:hover {
+        transform: none;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .bingo-cell.clay {
+        border: 3px solid var(--pine);
+    }
+    
+    .action-button {
+        border: 3px solid var(--pine);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .theme-background {
+        background: none;
+        background-color: white;
+    }
+    
+    .board-container::before {
+        border: none;
+    }
+    
+    .bingo-cell.clay {
+        border: 2px solid var(--pine);
+        print-color-adjust: exact;
+    }
+}
+

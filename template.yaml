@@ -1,0 +1,339 @@
+# template.yaml
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Bingo Game Serverless Infrastructure
+
+Parameters:
+  DomainName:
+    Type: String
+    Description: Domain name for the website (e.g., bingo.example.com)
+  CertificateArn:
+    Type: String
+    Description: ARN of ACM certificate for the domain
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+    Description: Deployment environment
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: python3.9
+    MemorySize: 256
+    Environment:
+      Variables:
+        THEMES_BUCKET: !Ref ThemesBucket
+        ENVIRONMENT: !Ref Environment
+    Layers:
+      - !Ref CommonLayer
+    Tags:
+      Environment: !Ref Environment
+      Application: BingoGame
+
+Resources:
+  # S3 Buckets
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref DomainName
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, HEAD]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${CloudFrontOriginAccessIdentity}'
+            Action: s3:GetObject
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+
+  ThemesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${DomainName}-themes'
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # Lambda Functions
+  GenerateBoardFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./lambda/generate_board/
+      Handler: app.lambda_handler
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ThemesBucket
+      Events:
+        GenerateBoard:
+          Type: HttpApi
+          Properties:
+            Path: /generate/{theme_id}
+            Method: GET
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+            RouteSettings:
+              ThrottlingBurstLimit: 100
+              ThrottlingRateLimit: 50
+      Tags:
+        Function: GenerateBoard
+
+  GeneratePDFFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ./lambda/generate_pdf/
+      Handler: app.lambda_handler
+      MemorySize: 512
+      Timeout: 30
+      Layers:
+        - !Ref ReportLabLayer
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref ThemesBucket
+      Events:
+        GeneratePDF:
+          Type: HttpApi
+          Properties:
+            Path: /download-pdf/{theme_id}
+            Method: POST
+            PayloadFormatVersion: '2.0'
+            TimeoutInMillis: 29000
+            RouteSettings:
+              ThrottlingBurstLimit: 50
+              ThrottlingRateLimit: 25
+      Tags:
+        Function: GeneratePDF
+
+  # Lambda Layers
+  CommonLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWS::StackName}-common'
+      Description: Common utilities and dependencies
+      ContentUri: ./lambda/layers/common/
+      CompatibleRuntimes:
+        - python3.9
+      RetentionPolicy: Retain
+
+  ReportLabLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: !Sub '${AWS::StackName}-reportlab'
+      Description: ReportLab PDF generation library
+      ContentUri: ./lambda/layers/reportlab/
+      CompatibleRuntimes:
+        - python3.9
+      RetentionPolicy: Retain
+
+  # CloudFront
+  CloudFrontOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OAI for ${DomainName}'
+
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Ref DomainName
+        Origins:
+          - DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            Id: S3Origin
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub 'origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}'
+          - DomainName: !Sub '${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+            Id: APIOrigin
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: https-only
+        Enabled: true
+        DefaultRootObject: index.html
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD, OPTIONS]
+          Compress: true
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+          MinTTL: 0
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        CacheBehaviors:
+          - PathPattern: '/api/*'
+            TargetOriginId: APIOrigin
+            ViewerProtocolPolicy: https-only
+            AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+            CachedMethods: [GET, HEAD, OPTIONS]
+            Compress: true
+            DefaultTTL: 0
+            MaxTTL: 0
+            MinTTL: 0
+            ForwardedValues:
+              QueryString: true
+              Headers:
+                - Authorization
+                - Host
+              Cookies:
+                Forward: none
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+        PriceClass: PriceClass_100
+        HttpVersion: http2
+        IPV6Enabled: true
+
+  # Route53 DNS Record
+  DNSRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneName: !Sub '${DomainName}.'
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt CloudFrontDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # CloudFront hosted zone ID
+
+  # WAF Web ACL
+  WebACL:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub '${AWS::StackName}-web-acl'
+      Description: WAF rules for Bingo Game
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      Rules:
+        - Name: RateLimit
+          Priority: 1
+          Statement:
+            RateBasedStatement:
+              Limit: 2000
+              AggregateKeyType: IP
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitRule
+        - Name: BlockBadBots
+          Priority: 2
+          Statement:
+            ByteMatchStatement:
+              SearchString: 'bad-bot'
+              FieldToMatch:
+                SingleHeader:
+                  Name: user-agent
+              TextTransformations:
+                - Type: LOWERCASE
+                  Priority: 1
+              PositionalConstraint: CONTAINS
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: BlockBadBotsRule
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-web-acl'
+
+  # CloudWatch Alarms
+  APIErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-api-errors'
+      AlarmDescription: Alert when API errors exceed threshold
+      MetricName: 5XXError
+      Namespace: AWS/ApiGateway
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: ApiName
+          Value: !Ref HttpApi
+
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub '${AWS::StackName}-lambda-errors'
+      AlarmDescription: Alert when Lambda errors exceed threshold
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref GenerateBoardFunction
+
+Outputs:
+  WebsiteBucketName:
+    Description: Name of S3 bucket to hold website content
+    Value: !Ref WebsiteBucket
+
+  ThemesBucketName:
+    Description: Name of S3 bucket to hold theme content
+    Value: !Ref ThemesBucket
+
+  CloudFrontDomainName:
+    Description: Domain name of CloudFront distribution
+    Value: !GetAtt CloudFrontDistribution.DomainName
+
+  APIEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/'
+
+  WebACLArn:
+    Description: ARN of WAF Web ACL
+    Value: !GetAtt WebACL.Arn
+
+  CloudFrontDistributionId:
+    Description: ID of CloudFront distribution
+    Value: !Ref CloudFrontDistribution

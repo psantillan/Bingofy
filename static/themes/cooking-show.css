@@ -1,0 +1,277 @@
+/* static/themes/cooking-show.css */
+/* 
+Theme: Master Chef Experience
+A premium cooking show themed bingo experience with modern design elements,
+smooth animations, and delightful micro-interactions.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+    /* Color Palette */
+    --color-flame: #ff4d4d;
+    --color-flame-light: #ff6b6b;
+    --color-sauce: #ffa94d;
+    --color-herb: #69db7c;
+    --color-wine: #862e9c;
+    --color-truffle: #212529;
+    --color-cream: #fff5f5;
+    --color-salt: #f8f9fa;
+    
+    /* Theme Colors */
+    --theme-primary: var(--color-truffle);
+    --theme-secondary: var(--color-flame);
+    --theme-accent: var(--color-sauce);
+    --theme-success: var(--color-herb);
+    --theme-background: var(--color-salt);
+    
+    /* Typography */
+    --font-heading: 'Playfair Display', serif;
+    --font-body: 'Inter', sans-serif;
+    
+    /* Effects */
+    --blur-strong: 20px;
+    --blur-subtle: 10px;
+    --shadow-subtle: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-strong: 0 8px 16px rgba(0, 0, 0, 0.1);
+    
+    /* Animations */
+    --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-medium: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Layout */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 4rem;
+    
+    /* Border Radius */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 1rem;
+    --radius-full: 9999px;
+}
+
+/* Base Theme Styles */
+.theme-background {
+    background: var(--theme-background);
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Organic Background Patterns */
+.theme-background::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 20%, var(--color-flame-light) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, var(--color-sauce) 0%, transparent 40%);
+    opacity: 0.1;
+    z-index: 0;
+}
+
+/* Moving Steam Effects */
+.steam-effect {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.steam-particle {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    filter: blur(8px);
+    animation: steam var(--transition-slow) infinite;
+}
+
+/* Typography */
+.header-title {
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 4rem);
+    background: linear-gradient(135deg, var(--color-flame) 0%, var(--color-sauce) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.theme-text {
+    font-family: var(--font-body);
+    color: var(--theme-primary);
+}
+
+/* Board and Cell Styles */
+.board-container {
+    backdrop-filter: blur(var(--blur-subtle));
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-strong);
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+
+.bingo-cell {
+    position: relative;
+    background: white;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-medium);
+    transform-style: preserve-3d;
+    cursor: pointer;
+}
+
+/* Premium Cell Hover Effects */
+.bingo-cell:hover {
+    transform: translateY(-4px) rotateX(10deg);
+    box-shadow: 
+        0 20px 25px -5px rgba(0, 0, 0, 0.1),
+        0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Material Ripple Effect */
+.bingo-cell::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle, transparent 1%, var(--color-flame-light) 1%) center/15000%;
+    border-radius: var(--radius-md);
+    opacity: 0;
+    transition: all var(--transition-fast);
+}
+
+.bingo-cell:active::after {
+    background-size: 100%;
+    opacity: 0.3;
+    transition: 0s;
+}
+
+/* Marked Cell Styles */
+.bingo-cell.marked {
+    background: var(--theme-secondary);
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bingo-cell.marked .bingo-text {
+    color: white;
+}
+
+/* Premium Button Styles */
+.action-button {
+    font-family: var(--font-body);
+    font-weight: 600;
+    color: white;
+    background: var(--theme-secondary);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-full);
+    transition: all var(--transition-medium);
+    position: relative;
+    overflow: hidden;
+}
+
+.action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-strong);
+    background: var(--color-flame);
+}
+
+/* Winning Animation */
+@keyframes celebrate {
+    0% { transform: scale(1) rotate(0); }
+    50% { transform: scale(1.1) rotate(5deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
+.winning-cell {
+    animation: celebrate 0.5s ease-in-out;
+}
+
+/* Steam Animation */
+@keyframes steam {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        transform: translateY(-50px) scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* Scroll Reveal Animation */
+.reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all var(--transition-slow);
+}
+
+.reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Accessibility - Dark Mode */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --theme-background: var(--color-truffle);
+        --theme-primary: var(--color-salt);
+    }
+
+    .board-container {
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .bingo-cell {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .bingo-cell .bingo-text {
+        color: var(--color-salt);
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .board-container {
+        box-shadow: none;
+        background: white;
+    }
+
+    .bingo-cell {
+        border: 1px solid black;
+        print-color-adjust: exact;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}
